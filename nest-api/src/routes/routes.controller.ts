@@ -39,4 +39,10 @@ export class RoutesController {
   remove(@Param('id') id: string) {
     return this.routesService.remove(+id);
   }
+
+  @Get(':id/start')
+  startCorrida(@Param('id') id: string) {
+    console.log(`\n\nfoi iniciada a corrida ${id}`);
+    //enviar mensagem para o kafka
+  }
 }
