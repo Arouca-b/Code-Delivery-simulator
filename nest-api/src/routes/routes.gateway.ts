@@ -65,6 +65,10 @@ export class RoutesGateway
   }
 
   sendPosition(data: Position) {
+    console.log(
+      `Enviando posição para clientes WebSocket: ${JSON.stringify(data)}`,
+    );
     this.server.emit('new-position', data);
+    console.log('Posição enviada com sucesso');
   }
 }

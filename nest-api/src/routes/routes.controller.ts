@@ -73,16 +73,28 @@ export class RoutesController implements OnModuleInit {
   consumeNewPosition(
     @Payload()
     message: {
-      value: Position;
+      value?: any;
     },
   ) {
-    console.log('\n\n\nPassou aq\n\n');
-    const { routeId, position } = message.value;
-    console.log(
-      `New position for route ${routeId}: ${JSON.stringify(position)}`,
-    );
+    console.log('\n\n\nRecebida nova posição\n\n');
+    console.log('Mensagem completa:', JSON.stringify(message));
 
-    // Encaminha a atualização de posição para os clientes WebSocket
-    this.routesService.sendPosition(message.value);
+    try {
+      // Verifica se a mensagem já é a posição ou se está dentro de uma propriedade value
+      const positionData: Position = (
+        message.value !== undefined ? message.value : message
+      ) as Position;
+
+      // Verifica se positionData tem as propriedades necessárias
+      if (!positionData || !positionData.routeId || !positionData.position) {
+        console.error('Dados de posição inválidos:', positionData);
+        return;
+      }
+
+      // Encaminha a atualização de posição para os clientes WebSocket
+      this.routesService.sendPosition(positionData);
+    } catch (error) {
+      console.error('Erro ao processar mensagem de posição:', error);
+    }
   }
 }
