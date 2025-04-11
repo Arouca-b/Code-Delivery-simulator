@@ -76,8 +76,11 @@ export class RoutesController implements OnModuleInit {
       value: Position;
     },
   ) {
+    console.log('\n\n\nPassou aq\n\n');
     const { routeId, position } = message.value;
-    console.log(`New position for route ${routeId}: ${position}`);
+    console.log(
+      `New position for route ${routeId}: ${JSON.stringify(position)}`,
+    );
 
     // Encaminha a atualização de posição para os clientes WebSocket
     this.routesService.sendPosition(message.value);
