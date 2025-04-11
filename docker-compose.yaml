@@ -1,10 +1,13 @@
 services:
+  # Apache Kafka
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
+    networks:
+      - default
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -84,7 +87,7 @@ services:
     # when running this offline, spin up the stack once and then run :
     #   docker cp kafka-connect:/usr/share/confluent-hub-components ./data/connect-jars
     volumes:
-      - $PWD/data:/data
+      - ./apache-kafka/data:/data
     # In the command section, $ are replaced with $$ to avoid the error 'Invalid interpolation format for "command" option'
     command:
       - bash
@@ -114,7 +117,7 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - ./es01:/usr/share/elasticsearch/data
+      - ./apache-kafka/es01:/usr/share/elasticsearch/data
     ports:
       - 9200:9200
     extra_hosts:
@@ -130,3 +133,77 @@ services:
       ELASTICSEARCH_HOSTS: '["http://es01:9200"]'
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
+
+  # Nest-Api
+  nest-api:
+    build:
+      context: ./nest-api
+    entrypoint: ./.docker/entrypoint.sh
+    ports:
+      - 3000:3000
+    volumes:
+      - ./nest-api:/home/node/app
+    depends_on:
+      - db
+      - kafka
+    networks:
+      - default
+
+  db:
+    image: mongo:latest
+    restart: always
+    volumes:
+      - ./nest-api/.docker/dbdata:/data/db
+      - ./nest-api/.docker/mongo:/docker-entrypoint-initdb.d
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+      - MONGO_INITDB_DATABASE=nest
+    networks:
+      - default
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=db
+      - ME_CONFIG_MONGODB_AUTH_USERNAME=root
+      - ME_CONFIG_MONGODB_AUTH_PASSWORD=root
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=root
+    depends_on:
+      - db
+    networks:
+      - default
+
+  # React Frontend
+  react-frontend:
+    build:
+      context: ./react-frontend
+    entrypoint: ./.docker/entrypoint.sh
+    ports:
+      - 3001:3000
+    volumes:
+      - ./react-frontend:/home/node/app
+    depends_on:
+      - nest-api
+    networks:
+      - default
+
+  # Simulador Go
+  simulator:
+    build:
+      context: ./simulator
+    container_name: simulator
+    volumes:
+      - ./simulator:/go/src/
+    depends_on:
+      - kafka
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
