@@ -1,6 +1,6 @@
 module github.com/Arouca-b/Code-Delivery-simulator
 
-go 1.24.2
+go 1.21
 
 require (
 	github.com/confluentinc/confluent-kafka-go v1.9.2

@@ -23,7 +23,7 @@ type Position struct {
 type PartialRoutePosition struct {
 	ID        string    `json:"routeId"`
 	ClientID  string    `json:"clientId"`
-	Positions []float64 `json:"positions"`
+	Position []float64 `json:"position"`
 	Finished  bool      `json:"finished"`
 }
 
@@ -78,7 +78,7 @@ func (r *Route) ExportJsonPositions() ([]string, error) {
 	for k, v := range r.Positions {
 		route.ID = r.ID
 		route.ClientID = r.ClientID
-		route.Positions = []float64{v.Lat, v.Long}
+		route.Position = []float64{v.Lat, v.Long}
 		route.Finished = false
 		if total-1 == k {
 			route.Finished = true
