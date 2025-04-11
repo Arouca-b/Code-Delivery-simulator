@@ -8,8 +8,9 @@ import { sample, shuffle } from "lodash";
 import { RouteExistsError } from "../error/route-exists.error";
 import { useSnackbar } from "notistack";
 import { Navbar } from "./navbar";
+import { io, Socket } from "socket.io-client";
 
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = process.env.REACT_APP_API_URL as string;
 const googleMapsLoader = new Loader(process.env.REACT_APP_GOOGLE_API_KEY);
 
 const colors = [
@@ -54,7 +55,46 @@ export const Mapping = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [routeIdSelected, setRouteIdSelected] = useState<string>("");
   const mapRef = useRef<Map>(null);
+  const socketIORef = useRef<Socket | null>(null);
   const { enqueueSnackbar } = useSnackbar();
+
+  const finishRout = useCallback(
+    (route: Route) => {
+      enqueueSnackbar(`${route.title} finalizou`, {
+        variant: "success",
+      });
+      mapRef.current?.removeRoute(route._id);
+    },
+    [enqueueSnackbar]
+  );
+
+  useEffect(() => {
+    if (!socketIORef.current?.connected) {
+      socketIORef.current = io(`${API_URL}/routes`);
+      socketIORef.current.on("connect", () => console.log("conectou"));
+    }
+
+    const handler = (data: {
+      routeId: string;
+      position: [number, number];
+      finished: boolean;
+    }) => {
+      console.log(data);
+      mapRef.current?.moveCurrentMarker(data.routeId, {
+        lat: data.position[0],
+        lng: data.position[1],
+      });
+
+      const route = routes.find((route) => route._id === data.routeId) as Route;
+      if (data.finished) {
+        finishRout(route);
+      }
+    };
+    socketIORef.current?.on("new-position", handler);
+    return () => {
+      socketIORef.current?.off("new-position", handler);
+    };
+  }, [finishRout, routes, routeIdSelected]);
 
   useEffect(() => {
     fetch(`${API_URL}/routes`)
@@ -95,6 +135,7 @@ export const Mapping = () => {
             icon: makeMarkerIcon(color),
           },
         });
+        socketIORef.current?.emit("new-direction", routeIdSelected);
       } catch (error) {
         if (error instanceof RouteExistsError) {
           enqueueSnackbar(`${route?.title} já adicionado, espere finalizar`, {
