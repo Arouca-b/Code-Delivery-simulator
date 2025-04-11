@@ -3,7 +3,13 @@ import { AppModule } from './app.module';
 import { Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule, {
+    cors: {
+      origin: '*', // Em produção, restrinja para o domínio do seu frontend
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      credentials: true,
+    },
+  });
 
   app.connectMicroservice({
     transport: Transport.KAFKA,

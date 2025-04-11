@@ -14,6 +14,7 @@ import { CreateRouteDto } from './dto/create-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
 import { ClientKafka, MessagePattern, Payload } from '@nestjs/microservices';
 import { Producer } from '@nestjs/microservices/external/kafka.interface';
+import { Position } from './interfaces/position.interface';
 
 @Controller('routes')
 export class RoutesController implements OnModuleInit {
@@ -68,18 +69,17 @@ export class RoutesController implements OnModuleInit {
     this.kafkaProducer = await this.kafkaClient.connect();
   }
 
-  @MessagePattern('route-new-position')
+  @MessagePattern('route.new-position')
   consumeNewPosition(
     @Payload()
     message: {
-      value: {
-        routeId: string;
-        clienteId: string;
-        position: [number, number];
-        finished: boolean;
-      };
+      value: Position;
     },
   ) {
-    console.log(message.value);
+    const { routeId, position } = message.value;
+    console.log(`New position for route ${routeId}: ${position}`);
+
+    // Encaminha a atualização de posição para os clientes WebSocket
+    this.routesService.sendPosition(message.value);
   }
 }

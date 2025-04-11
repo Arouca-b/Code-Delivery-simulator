@@ -4,11 +4,14 @@ import { UpdateRouteDto } from './dto/update-route.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Route, RouteDocument } from './entities/route.entity';
 import { Model } from 'mongoose';
+import { RoutesGateway } from './routes.gateway';
+import { Position } from './interfaces/position.interface';
 
 @Injectable()
 export class RoutesService {
   constructor(
     @InjectModel(Route.name) private routeModel: Model<RouteDocument>,
+    private routesGateway: RoutesGateway,
   ) {}
 
   create(createRouteDto: CreateRouteDto) {
@@ -29,5 +32,10 @@ export class RoutesService {
 
   remove(id: number) {
     return `This action removes a #${id} route`;
+  }
+
+  sendPosition(data: Position) {
+    // Encaminha a atualização de posição para o gateway WebSocket
+    this.routesGateway.sendPosition(data);
   }
 }
