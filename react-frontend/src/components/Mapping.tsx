@@ -79,14 +79,32 @@ export const Mapping = () => {
       position: [number, number];
       finished: boolean;
     }) => {
-      console.log(data);
+      console.log("Recebida nova posição via WebSocket:", data);
+
+      if (!data || !data.position || !data.routeId) {
+        console.error("Dados inválidos recebidos:", data);
+        return;
+      }
+
+      console.log(
+        `Movendo marcador da rota ${data.routeId} para [${data.position[0]}, ${data.position[1]}]`
+      );
+
+      console.log(`\n\n ${data.position}\n\n`);
+
       mapRef.current?.moveCurrentMarker(data.routeId, {
         lat: data.position[0],
         lng: data.position[1],
       });
 
       const route = routes.find((route) => route._id === data.routeId) as Route;
+      if (!route) {
+        console.error(`Rota não encontrada para o ID: ${data.routeId}`);
+        return;
+      }
+
       if (data.finished) {
+        console.log(`Rota ${data.routeId} finalizada`);
         finishRout(route);
       }
     };
@@ -135,7 +153,9 @@ export const Mapping = () => {
             icon: makeMarkerIcon(color),
           },
         });
-        socketIORef.current?.emit("new-direction", routeIdSelected);
+        socketIORef.current?.emit("new-direction", {
+          routeId: routeIdSelected,
+        });
       } catch (error) {
         if (error instanceof RouteExistsError) {
           enqueueSnackbar(`${route?.title} já adicionado, espere finalizar`, {
